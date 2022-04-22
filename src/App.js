@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import './App.css';
 // import ReactDOM from 'react-dom';
 import {Box, Grid} from '@mui/material';
@@ -35,30 +35,67 @@ const useStyles = makeStyles({
   }
 });
 
-// const wallets = localStorage.getItem('wallets');
+const apiUrl = "https://api.blockcypher.com/v1/btc/main/addrs/";
 
 const localStorageSim = [
   {
     nickname: 'wallet 1' || '',
     type: 'wallet' || 'group',
-    id: 12345 || '',
+    address: 12345 || '',
   },
   {
     nickname: 'wallet nickname 2' || '',
     type: 'wallet' || 'group',
-    id: 67890 || '',
+    address: 67890 || '',
   },
 ];
 
 
 function App() {
   // const [wallet, setWallet] = useState(wallets ? wallets[0] : null);
-  const [wallet, setWallet] = useState(localStorageSim[0]);
+  const [wallet, setWallet] = useState( [0]);
+  const [storedAddys, setStoredAddys] = useState(localStorageSim);
+  const [newAddy, setNewAddy] = useState({nickname: '', address: null});
+  const [balance, setBalance] = useState('');
   const classes = useStyles();
 
-  const handleWalletSelect = (id) => {
-    const w = localStorageSim.find(w => id === w.id)
+  const handleWalletSelect = async (address) => {
+    const w = storedAddys.find(w => address === w.address)
+    const info = await getAddressInfo(address)
     setWallet(w);
+    setBalance(info.balance);
+  }
+
+  const getAddressInfo = async (address) => {
+    const info = await fetch(apiUrl + address,{
+      headers:{
+        'Content-Type': 'application/json'
+      },
+    });
+    return await info.json();
+  }
+
+  const getSavedAddys = async () => {
+    const addys = await localStorage.getItem('addresses');
+    const parsedAddys = await JSON.parse(addys);
+    setStoredAddys(parsedAddys);
+  }
+
+  useEffect(()=>{
+    getSavedAddys();
+  },[])
+
+  const handleAddWallet = (e) => {
+    e.preventDefault();
+    console.log('current')
+    const current = localStorage.getItem('addresses')
+    const updated = current ? [...current, newAddy] : [newAddy];
+    console.log(updated)
+    localStorage.setItem('addresses', JSON.stringify(updated));
+  }
+
+  const updateAddress = (field, value) => {
+    setNewAddy({...newAddy, [field]: value});
   }
 
 
@@ -66,8 +103,8 @@ function App() {
     <Box style={{minHeight: '100%'}}>
       <Grid container>
         <Grid className={classes.leftColumn} item xs={3}>
-          {localStorageSim.map((w)=> {
-            return <div className={classes.sidebar} onClick={()=>handleWalletSelect(w.id)} name={w.id.toString()} key={w.id}>
+          {storedAddys?.map((w)=> {
+            return <div className={classes.sidebar} onClick={()=>handleWalletSelect(w.address)} name={w.address.toString()} key={w.address}>
               <AccountBalanceWalletIcon/>
               <span>{w.nickname}</span>
             </div>
@@ -76,22 +113,30 @@ function App() {
         <Grid item xs={9} className={classes.rightColumn}>
           <div className={classes.walletContainer}>
             <h2>{wallet.nickname}</h2>
-            <i>address: {wallet.id}</i>
+            <i>address: {wallet.address}</i>
             <table className={classes.transactions}>
               <thead>
-                <td>Date</td>
+                {/* <td>Date</td> */}
                 <td>Amount</td>
                 <td>USD Value</td>
               </thead>
               <tbody>
                 <tr>
-                  <td>4-22-2022</td>
-                  <td>12358392 SATS</td>
-                  <td>$200.00</td>
+                  {/* <td>4-22-2022</td> */}
+                  <td>{balance} (SATS)</td>
+                  <td>$FAKE DATA (USD)</td>
                 </tr>
               </tbody>
             </table>
           </div>
+          <form onSubmit={handleAddWallet}>
+            <h5>Track a new address</h5>
+            <input name="nickname" placeholder='nickname' onChange={(e)=>updateAddress('nickname',e.target.value)} />
+            <br/>
+            <input name="address" placeholder='address' onChange={(e)=>updateAddress('address',e.target.value)} />
+            <br/>
+            <button type="submit" >add address</button>
+          </form>
         </Grid>
       </Grid>
     </Box>
