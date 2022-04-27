@@ -9,20 +9,19 @@ const useStyles = makeStyles({
   leftColumn: {
     backgroundColor: '#cfcfcf',
     minHeight: '100vh', 
-    padding: '10rem 2rem',
+    padding: '6rem 2rem',
   },
   rightColumn: {
     minHeight: '100vh', 
-    padding: '10rem 5rem',
+    padding: '5rem 5rem',
   },
   walletContainer: {
     borderRadius: '4px',
     backgroundColor: '#cfcfcf',
-    padding: '2.5rem'
+    padding: '2rem'
   },
   sidebar: {
     fontSize: '1rem',
-    margin: '1rem',
     alignItems: 'vertical',
     '& svg': {
       height: '1rem'
@@ -37,48 +36,42 @@ const useStyles = makeStyles({
 
 const apiUrl = "https://api.blockcypher.com/v1/btc/main/addrs/";
 
-const localStorageSim = [
-  {
-    nickname: 'wallet 1' || '',
-    type: 'wallet' || 'group',
-    address: 12345 || '',
-  },
-  {
-    nickname: 'wallet nickname 2' || '',
-    type: 'wallet' || 'group',
-    address: 67890 || '',
-  },
-];
-
 
 function App() {
   // const [wallet, setWallet] = useState(wallets ? wallets[0] : null);
-  const [wallet, setWallet] = useState( [0]);
-  const [storedAddys, setStoredAddys] = useState(localStorageSim);
+  const [wallet, setWallet] = useState({
+    nickname: 'No Wallet selected',
+    type: 'wallet',
+    address: 'none'
+  });
+  const [storedAddys, setStoredAddys] = useState([wallet]);
   const [newAddy, setNewAddy] = useState({nickname: '', address: null});
-  const [balance, setBalance] = useState('');
+  const [balance, setBalance] = useState(0);
   const classes = useStyles();
 
   const handleWalletSelect = async (address) => {
-    const w = storedAddys.find(w => address === w.address)
+    const w = storedAddys?.find(w => address === w.address)
     const info = await getAddressInfo(address)
     setWallet(w);
     setBalance(info.balance);
   }
 
   const getAddressInfo = async (address) => {
-    const info = await fetch(apiUrl + address,{
-      headers:{
-        'Content-Type': 'application/json'
-      },
-    });
-    return await info.json();
+    console.log('before')
+    if (address.toString().length > 6) {
+      console.log('then')
+      const info = await fetch(apiUrl + address);
+      console.log('here?')
+      return await info.json();
+    } 
+    else return wallet;
   }
 
   const getSavedAddys = async () => {
     const addys = await localStorage.getItem('addresses');
     const parsedAddys = await JSON.parse(addys);
-    setStoredAddys(parsedAddys);
+    await setStoredAddys(parsedAddys);
+    await handleWalletSelect(storedAddys[storedAddys.length - 1].address);
   }
 
   useEffect(()=>{
@@ -87,11 +80,11 @@ function App() {
 
   const handleAddWallet = (e) => {
     e.preventDefault();
-    console.log('current')
-    const current = localStorage.getItem('addresses')
-    const updated = current ? [...current, newAddy] : [newAddy];
-    console.log(updated)
+    const JSONaddys = localStorage.getItem('addresses');
+    const parsedAddys = JSON.parse(JSONaddys);
+    const updated = parsedAddys ? [...parsedAddys, newAddy] : [newAddy];
     localStorage.setItem('addresses', JSON.stringify(updated));
+    getSavedAddys();
   }
 
   const updateAddress = (field, value) => {
@@ -103,28 +96,34 @@ function App() {
     <Box style={{minHeight: '100%'}}>
       <Grid container>
         <Grid className={classes.leftColumn} item xs={3}>
+          <h2>Saved Addresses</h2>
           {storedAddys?.map((w)=> {
-            return <div className={classes.sidebar} onClick={()=>handleWalletSelect(w.address)} name={w.address.toString()} key={w.address}>
+            return <div className={classes.sidebar} onClick={()=>handleWalletSelect(w.address)} name={w?.address?.toString()} key={w.address}>
               <AccountBalanceWalletIcon/>
               <span>{w.nickname}</span>
             </div>
           })}
         </Grid>
         <Grid item xs={9} className={classes.rightColumn}>
+          <h1>BTC Address Checker</h1>
           <div className={classes.walletContainer}>
-            <h2>{wallet.nickname}</h2>
+            <h3>{wallet.nickname}</h3>
             <i>address: {wallet.address}</i>
+            <br/>
+            <br/>
             <table className={classes.transactions}>
               <thead>
-                {/* <td>Date</td> */}
-                <td>Amount</td>
-                <td>USD Value</td>
+                <tr>
+                  {/* <td>Date</td> */}
+                  <th>Amount</th>
+                  <th>USD Value</th>
+                </tr>
               </thead>
               <tbody>
                 <tr>
                   {/* <td>4-22-2022</td> */}
                   <td>{balance} (SATS)</td>
-                  <td>$FAKE DATA (USD)</td>
+                  <td>{balance} (USD)</td>
                 </tr>
               </tbody>
             </table>
