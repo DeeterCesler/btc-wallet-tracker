@@ -1,7 +1,30 @@
-html, body {
+html,
+body {
   margin: 0;
 }
 
 .App {
   text-align: center;
+}
+
+form input,
+form button {
+  padding: 4px;
+  margin-bottom: 8px;
+  border-radius: 5px;
+}
+
+form input {
+  background-color: #feffde;
+}
+
+form button {
+  background-color: #cab6cd;
+}
+
+.error {
+  font-size: 0.8rem;
+  color: rgb(255, 76, 76);
+  margin-top: -20px;
+  white-space: pre-wrap;
 }
